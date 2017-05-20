@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <title>ズーモのバルーン VR</title>
+    <meta property="og:image" content="images/og_image.png">
+    <style>
+      * {
+        -webkit-tap-highlight-color: rgba(0,0,0,0);
+      }
+    </style>
+    <script src="https://aframe.io/releases/0.5.0/aframe.js"></script>
+    <script>
+      window.addEventListener('load', function(){
+        var mainScene = document.querySelector('#main-scene');
+        var template = document.querySelector('#zuumo-template');
+        var zuumos = [];
+
+        function touched(e){
+          var zuumo = e.target;
+          var KEY = 'data-mouse';
+          if (zuumo.getAttribute(KEY) == 'on') {
+            return;
+          }
+
+          zuumo.setAttribute(KEY, 'on');
+
+          var p = zuumo.parentNode.object3D.rotation;
+          var radiusX = 30 / 180 * Math.PI; // 後ろへ倒す
+          var radiusY = (Math.random() * 60 - 30) / 180 * Math.PI; // 適当に横へ揺らす
+
+          // 倒れる動き
+          new TWEEN.Tween(p)
+          .to({ x: p.x - radiusX, y: p.y - radiusY, z: p.z }, 200)
+          .easing(TWEEN.Easing.Quintic.Out)
+          .onUpdate(function() {
+            zuumo.parentNode.object3D.rotation.set(this.x, this.y, this.z);
+          })
+          .chain(
+            // 戻ってくる動き
+            new TWEEN.Tween(p)
+            .to({ x: 0, y: p.y, z: p.z }, 2000)
+            .easing(TWEEN.Easing.Elastic.Out)
+            .onUpdate(function() {
+              zuumo.parentNode.object3D.rotation.set(this.x, this.y, this.z);
+            })
+            .onComplete(function() {
+              // 再度倒せるようにする
+              zuumo.setAttribute(KEY, 'off');
+            })
+          )
+          .start();
+        }
+        function addZuumo(containerDegree, eachDegree){
+          var zuumo = document.importNode(template.content, true);
+          zuumo.querySelector('.zuumo-container').setAttribute('rotation', [0, containerDegree, 0].join(' '));
+          zuumo.querySelector('.zuumo-rotator').setAttribute('rotation', [0, eachDegree, 0].join(' '));
+          zuumo.querySelector('.collidable').addEventListener('raycaster-intersected', touched);
+
+          mainScene.appendChild(zuumo);
+        }
+        function addZuumos(){
+          var numOfZuumo = 16;
+          var degree = 360 / numOfZuumo;
+          for(var i = 0; i < numOfZuumo; i++) {
+            var eachDegree = Math.round(Math.random() * 40) - 20;
+            addZuumo(degree * i, eachDegree);
+          }
+        }
+
+        addZuumos();
+      });
+    </script>
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-32407364-1', 'auto');
+      ga('send', 'pageview');
+    </script>
+  </head>
+  <body>
+    <template id="zuumo-template">
+      <a-entity class="zuumo-container">
+        <a-entity class="zuumo-rotator" position="0 0 -2.5">
+          <a-collada-model src="#zuumo-model" class="zuumo"></a-collada-model>
+          <a-cylinder color="crimson" height="2.1" radius="0.3" class="collidable" position="0 1.15 0" opacity="0"></a-cylinder>
+        </a-entity>
+      </a-entity>
+    </template>
+
+    <a-scene id="main-scene" fog="type: linear; color: #000; far: 7;">
+      <a-assets>
+        <a-asset-item id="zuumo-model" src="models/zuumo.dae">
+      </a-assets>
+
+      <a-box side='back' width=6.9999 depth=6.9999 height=2.4 position="0 1.200 0"></a-box>
+
+      <a-camera user-height="1.20" wasd-controls="enabled: false" raycaster="objects: .collidable">
+        <a-cursor></a-cursor>
+      </a-camera>
+
+      <a-light type="ambient" color="#bbb"></a-light>
+      <a-light type="directional" color="#fff" intensity="0.6" position="-0.5 1 1"></a-light>
+    </a-scene>
+  </body>
+</html>
